@@ -1,0 +1,38 @@
+FROM python:3.14.0-alpine
+WORKDIR /usr/src/myapp
+
+# install build stuff, install python packages and remove most build stuff
+RUN apk update && \
+    apk upgrade && \
+    apk add curl git re2 re2-dev py3-pybind11 py3-pybind11-dev py3-re2 g++ && \
+    pip install git+https://github.com/clairey-zx81/json-model@dev && \
+    pip install git+https://github.com/zx80/json-schema-utils@dev && \
+    apk del git re2-dev py3-pybind11-dev py3-re2 g++ && \
+    apk cache clean
+# rm -rf /root/.cache
+
+# cache meta schemas
+# echo -n "http://json-schema.org/draft-03/schema"|openssl sha3-256|cut -d' ' -f2|cut -c 1-16
+RUN JSO="https://json-schema.org" ; \
+    curl -s "$JSO/draft-03/schema" > 72a587848580f1cc.json ; \
+    curl -s "$JSO/draft-04/schema" > 3f0f1590da608487.json ; \
+    curl -s "$JSO/draft-06/schema" > eaabd9a86add1898.json ; \
+    curl -s "$JSO/draft-07/schema" > eba329c299f16993.json ; \
+    curl -s "$JSO/draft/2019-09/schema" > b98b936c46b13132.json ; \
+    curl -s "$JSO/draft/2019-09/meta/core" > adbff237ea066fbb.json ; \
+    curl -s "$JSO/draft/2019-09/meta/format" > 5735640716704de6.json ; \
+    curl -s "$JSO/draft/2019-09/meta/applicator" > 7a1def5ca9d849f3.json ; \
+    curl -s "$JSO/draft/2019-09/meta/validation" > 8bb7133902444a20.json ; \
+    curl -s "$JSO/draft/2019-09/meta/content" > d64f85f774608f70.json ; \
+    curl -s "$JSO/draft/2019-09/meta/meta-data" > eeffa1de12cc69f6.json ; \
+    curl -s "$JSO/draft/2020-12/schema" > 3266ac9210df7293.json ; \
+    curl -s "$JSO/draft/2020-12/meta/core" > a0025011f4cb92ac.json ; \
+    curl -s "$JSO/draft/2020-12/meta/format-annotation" > 4fbd33fa62765d34.json ; \
+    curl -s "$JSO/draft/2020-12/meta/applicator" > 5eb465959bdd994b.json ; \
+    curl -s "$JSO/draft/2020-12/meta/validation" > 2d74e5a43f86833b.json ; \
+    curl -s "$JSO/draft/2020-12/meta/content" > 922f2750f4aeb148.json ; \
+    curl -s "$JSO/draft/2020-12/meta/meta-data" > 390c6afdc5cd9257.json ; \
+    curl -s "$JSO/draft/2020-12/meta/unevaluated" > 28ec53b33c6511b5.json
+
+COPY bowtie_jsu_python.py .
+CMD ["python3", "bowtie_jsu_python.py"]
