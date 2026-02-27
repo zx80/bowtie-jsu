@@ -31,7 +31,7 @@ VERSIONS: dict[str, int] = {
     "http://json-schema.org/draft-03/schema#": 3,
 }
 
-DRAFT_2019_09  = 8
+DRAFT_2019_09 = 8
 
 # cache is used for registry and meta schemas
 CACHE: str = "."
@@ -88,7 +88,8 @@ class Runner:
         case = req["case"]
         assert isinstance(case, dict)
         description = case.get(
-            "description", f"case from input line {self.line}",
+            "description",
+            f"case from input line {self.line}",
         )
 
         # put registry in cache
@@ -168,7 +169,6 @@ class Runner:
             sys.stdout.write(json.dumps(res))
             sys.stdout.write("\n")
             sys.stdout.flush()
-
 
 
 if __name__ == "__main__":
