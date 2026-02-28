@@ -30,8 +30,6 @@ VERSIONS: dict[str, int] = {
     "http://json-schema.org/draft-03/schema#": 3,
 }
 
-DRAFT_2019_09: int = 8
-
 # cache is used for registry and meta schemas
 CACHE: str = "."
 
@@ -77,9 +75,6 @@ class Runner:
 
         try:
             self.version = VERSIONS[req["dialect"]]
-            # however, 2019-09 and 2020-12 must rely on $schema
-            if self.version >= DRAFT_2019_09:
-                self.version = None
         except Exception:  # unknown version
             self.version = 0
 
@@ -136,21 +131,17 @@ class Runner:
         """Process one request."""
 
         cmd = req.get("cmd", "run")  # default is to run
-
-        return (
-            self.cmd_start(req)
-            if cmd == "start"
-            else self.cmd_dialect(req)
-            if cmd == "dialect"
-            else self.cmd_run(req)
-            if cmd == "run"
-            else self.cmd_stop(req)
-            if cmd == "stop"
-            else {
-                "seq": req.get("seq", f"input line {self.line}"),
-                "message": f"unexpected bowtie command cmd={cmd}",
-            }
-        )
+        match cmd:
+            case "start":
+                return self.cmd_start(req)
+            case "dialect":
+                return self.cmd_dialect(req)
+            case "run":
+                return self.cmd_run(req)
+            case "stop":
+                return self.cmd_stop(req)
+            case _:
+                raise Exception(f"unexpected bowtie command cmd={cmd}",)
 
     def run(self):
         """Runner purpose is to run."""
@@ -163,10 +154,9 @@ class Runner:
                 assert isinstance(req, dict), "input must be a json object"
                 res = self.process(req)
             except Exception as e:
-                res = {
-                    "message": f"invalid json input on line {self.line}: {e}",
-                    "context": {"traceback": traceback.format_exc()},
-                }
+                sys.stderr.write(f"{self.line}: invalid json input ({e})\n")
+                sys.stderr.flush()
+                raise  # voluntary crash
             sys.stdout.write(json.dumps(res))
             sys.stdout.write("\n")
             sys.stdout.flush()

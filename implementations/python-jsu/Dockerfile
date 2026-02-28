@@ -26,7 +26,7 @@ RUN if [ "$JMC" ] ; then \
     apk cache clean
 # no: rm -rf /root/.cache
 
-# cache meta schemas
+# cache meta schemas: url contents are stored in files named after the hashed url
 RUN apk add curl openssl && \
     for url in \
         "http://json-schema.org/draft-03/schema" \
