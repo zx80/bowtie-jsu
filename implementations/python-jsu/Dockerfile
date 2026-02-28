@@ -4,7 +4,7 @@ FROM alpine:3.23
 # without recompiling from sources, whereas the base alpine image has it,
 # so start from alpine.
 
-RUN mkdir /app
+RUN mkdir /app /app/schema-cache-by-hashed-urls
 WORKDIR /app
 
 # allow to install from package (not set) or build from sources (branch or commit)

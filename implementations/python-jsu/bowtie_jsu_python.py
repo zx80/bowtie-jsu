@@ -37,7 +37,7 @@ VERSIONS: dict[str, int] = {
 }
 
 # cache is used for registry and meta schemas
-CACHE: str = "."
+CACHE: str = "./schema-cache-by-hashed-urls"
 
 # version for both front-end and back-end
 JSU_VERSION: str = (
