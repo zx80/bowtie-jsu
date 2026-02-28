@@ -141,7 +141,7 @@ class Runner:
             case "stop":
                 return self.cmd_stop(req)
             case _:
-                raise Exception(f"unexpected bowtie command cmd={cmd}",)
+                raise Exception(f"unexpected bowtie command cmd={cmd}")
 
     def run(self):
         """Runner purpose is to run."""
