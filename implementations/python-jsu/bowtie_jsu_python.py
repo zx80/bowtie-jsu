@@ -22,9 +22,7 @@ type Jsonable = (
 )
 
 # available JSON Schema specifications
-SPECS: dict[str, Jsonable] = {
-    url: REGISTRY.contents(url) for url in REGISTRY
-}
+SPECS: dict[str, Jsonable] = {url: REGISTRY.contents(url) for url in REGISTRY}
 
 # JSON Schema version URL to internal version
 VERSIONS: dict[str, int] = {
@@ -101,7 +99,7 @@ class Runner:
 
         try:
             # put registries in cache
-            for reg in [ SPECS, case.get("registry") ]:
+            for reg in [SPECS, case.get("registry")]:
                 if reg is not None:
                     for url, schema in reg.items():
                         # use truncated hashed url as filename
@@ -140,7 +138,6 @@ class Runner:
             "seq": req.get("seq"),
             "results": results,
         }
-
 
     def cmd_stop(self, req: Jsonable) -> Jsonable:
         """Stop all processing."""
