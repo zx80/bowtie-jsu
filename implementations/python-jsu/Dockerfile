@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.23
 RUN mkdir /app
 WORKDIR /app
 
