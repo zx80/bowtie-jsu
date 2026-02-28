@@ -1,4 +1,9 @@
 FROM alpine:3.23
+
+# NOTE python images do not seem to have google-re2 python wrapper available
+# without recompiling from sources, whereas the base alpine image has it,
+# so start from alpine.
+
 RUN mkdir /app
 WORKDIR /app
 
@@ -22,38 +27,10 @@ RUN if [ "$JMC" ] ; then \
     python -m venv /venv --system-site-packages && \
     pip install "$jmc" && \
     pip install "$jsu" && \
+    pip install jsonschema-specifications && \
     apk del git && \
     apk cache clean
 # no: rm -rf /root/.cache
-
-# cache meta schemas: url contents are stored in files named after the hashed url
-RUN apk add curl openssl && \
-    for url in \
-        "http://json-schema.org/draft-03/schema" \
-        "http://json-schema.org/draft-04/schema" \
-        "http://json-schema.org/draft-06/schema" \
-        "http://json-schema.org/draft-07/schema" \
-        "https://json-schema.org/draft/2019-09/schema" \
-        "https://json-schema.org/draft/2019-09/meta/core" \
-        "https://json-schema.org/draft/2019-09/meta/format" \
-        "https://json-schema.org/draft/2019-09/meta/applicator" \
-        "https://json-schema.org/draft/2019-09/meta/validation" \
-        "https://json-schema.org/draft/2019-09/meta/content" \
-        "https://json-schema.org/draft/2019-09/meta/meta-data" \
-        "https://json-schema.org/draft/2020-12/schema" \
-        "https://json-schema.org/draft/2020-12/meta/core" \
-        "https://json-schema.org/draft/2020-12/meta/format-annotation" \
-        "https://json-schema.org/draft/2020-12/meta/applicator" \
-        "https://json-schema.org/draft/2020-12/meta/validation" \
-        "https://json-schema.org/draft/2020-12/meta/content" \
-        "https://json-schema.org/draft/2020-12/meta/meta-data" \
-        "https://json-schema.org/draft/2020-12/meta/unevaluated" ; \
-    do \
-      uh=$(echo -n $url | openssl sha3-256 | cut -d' ' -f 2| cut -c 1-16 ) ; \
-      curl -sL "$url" > "./$uh.json" ; \
-    done && \
-    apk del curl openssl && \
-    apk cache clean
 
 COPY bowtie_jsu_python.py .
 CMD ["python3", "./bowtie_jsu_python.py"]

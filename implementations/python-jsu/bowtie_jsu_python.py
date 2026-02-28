@@ -14,11 +14,17 @@ import platform
 import sys
 import traceback
 
+from jsonschema_specifications import REGISTRY
 from jsutils import json_schema_to_python_checker
 
 type Jsonable = (
     None | bool | int | float | str | list[Jsonable] | dict[str, Jsonable]
 )
+
+# available JSON Schema specifications
+SPECS: dict[str, Jsonable] = {
+    url: REGISTRY.contents(url) for url in REGISTRY
+}
 
 # JSON Schema version URL to internal version
 VERSIONS: dict[str, int] = {
@@ -55,7 +61,7 @@ class Runner:
     def cmd_start(self, req: Jsonable) -> Jsonable:
         """Respond to start with various meta data about the implementation."""
 
-        assert req.get("version", 1) == 1, "expecting protocol version 1"
+        assert req.get("version") == 1, "expecting protocol version 1"
 
         return {
             "version": 1,
@@ -91,17 +97,19 @@ class Runner:
         assert isinstance(case, dict)
         description = case.get("description")
 
-        # TODO what about skipping unsupported cases?
-        # FIXME there is no clean way to identify them
+        files, results = [], []
 
         try:
-            # put registry in cache
-            registry = case.get("registry", {})
-            if registry is not None:  # let us hope it is a dict
-                for url, schema in registry.items():
-                    uh: str = hashlib.sha3_256(url.encode()).hexdigest()[:16]
-                    with Path.open(f"{CACHE}/{uh}.json", "w") as fp:
-                        json.dump(schema, fp)
+            # put registries in cache
+            for reg in [ SPECS, case.get("registry") ]:
+                if reg is not None:
+                    for url, schema in reg.items():
+                        # use truncated hashed url as filename
+                        uh = hashlib.sha3_256(url.encode()).hexdigest()[:16]
+                        fn = f"{CACHE}/{uh}.json"
+                        files.append(fn)
+                        with Path.open(fn, "w") as fp:
+                            json.dump(schema, fp)
 
             # compile schema to python
             checker = json_schema_to_python_checker(
@@ -116,16 +124,23 @@ class Runner:
                 {"valid": checker(test["instance"])} for test in case["tests"]
             ]
 
-            return {
-                "seq": req.get("seq", f"input line {self.line}"),
-                "results": results,
-            }
         except Exception:  # an internal error occurred
             return {
                 "errored": True,
-                "seq": req.get("seq", f"input line {self.line}"),
+                "seq": req.get("seq"),
                 "context": {"traceback": traceback.format_exc()},
             }
+
+        finally:
+            # remove registered files from cache
+            for fn in files:
+                Path(fn).unlink()
+
+        return {
+            "seq": req.get("seq"),
+            "results": results,
+        }
+
 
     def cmd_stop(self, req: Jsonable) -> Jsonable:
         """Stop all processing."""
@@ -144,7 +159,7 @@ class Runner:
                 return self.cmd_run(req)
             case "stop":
                 return self.cmd_stop(req)
-            case _:
+            case _:  # trigger crash
                 raise RunnerError(f"unexpected bowtie command cmd={cmd}")
 
     def run(self):
