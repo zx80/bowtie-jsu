@@ -30,7 +30,7 @@ VERSIONS: dict[str, int] = {
     "http://json-schema.org/draft-03/schema#": 3,
 }
 
-DRAFT_2019_09: int  = 8
+DRAFT_2019_09: int = 8
 
 # cache is used for registry and meta schemas
 CACHE: str = "."
