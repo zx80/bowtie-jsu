@@ -40,6 +40,10 @@ JSU_VERSION: str = (
 )
 
 
+class RunnerError(Exception):
+    pass
+
+
 @dataclass
 class Runner:
     # current dialect, but for older dialects only
@@ -141,7 +145,7 @@ class Runner:
             case "stop":
                 return self.cmd_stop(req)
             case _:
-                raise Exception(f"unexpected bowtie command cmd={cmd}")
+                raise RunnerError(f"unexpected bowtie command cmd={cmd}")
 
     def run(self):
         """Runner purpose is to run."""
