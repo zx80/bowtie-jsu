@@ -14,7 +14,7 @@ import platform
 import sys
 import traceback
 
-from jsonschema_specifications import REGISTRY, Schema
+from jsonschema_specifications import REGISTRY
 from jsutils import json_schema_to_python_checker
 
 type JsonObject = dict[str, Json]
@@ -22,7 +22,7 @@ type JsonArray = list[Json]
 type Json = None | bool | int | float | str | JsonArray | JsonObject
 
 # available JSON Schema specifications
-SPECS: dict[str, Schema] = {
+SPECS: dict[str, JsonObject] = {
     url: REGISTRY.contents(url) for url in REGISTRY
 }
 

@@ -11,26 +11,20 @@ WORKDIR /app
 ARG JMC
 ARG JSU
 
-# setup virtual environment
-ENV PATH=/venv/bin:$PATH
-RUN if [ "$JMC" ] ; then \
-        jmc="git+https://github.com/clairey-zx81/json-model@$JMC" ; \
-    else \
-        jmc=json_model_compiler ; \
-    fi && \
-    if [ "$JSU" ] ; then \
-        jsu="git+https://github.com/zx80/json-schema-utils@$JSU" ; \
-    else \
-        jsu=json_schema_utils ; \
-    fi && \
-    apk add git py3-pip py3-re2 icu-data-full && \
-    python -m venv /venv --system-site-packages && \
-    pip install "$jmc" && \
-    pip install "$jsu" && \
-    pip install jsonschema-specifications && \
-    apk del git && \
-    apk cache clean
-# no: rm -rf /root/.cache
+# system site package dependencies
+RUN apk add git py3-pip py3-re2 icu-data-full
 
+# setup Python virtual environment
+ENV PATH=/venv/bin:$PATH
+RUN python -m venv /venv --system-site-packages
+RUN pip install jsonschema-specifications
+
+RUN if [ "$JMC" ] ; then jmc="git+https://github.com/clairey-zx81/json-model@$JMC" ; fi ; \
+    pip install "${jmc:-json_model_compiler}"
+
+RUN if [ "$JSU" ] ; then jsu="git+https://github.com/zx80/json-schema-utils@$JSU" ; fi ; \
+    pip install "${jsu:-json_schema_utils}"
+
+# harness script
 COPY bowtie_jsu_python.py .
 CMD ["python3", "./bowtie_jsu_python.py"]
