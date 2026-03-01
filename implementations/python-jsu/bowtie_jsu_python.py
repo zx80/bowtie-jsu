@@ -11,6 +11,7 @@ from pathlib import Path
 import hashlib
 import json
 import platform
+import shutil
 import sys
 import traceback
 
@@ -37,7 +38,7 @@ VERSIONS: dict[str, int] = {
 }
 
 # cache is used for registry and meta schemas
-CACHE: str = "./schema-cache-by-hashed-urls"
+CACHE: Path = Path(__file__).parent / "schema-cache-by-hashed-urls"
 
 # version for both front-end and back-end
 JSU_VERSION: str = (
@@ -97,12 +98,14 @@ class Runner:
 
         case = req["case"]
         assert isinstance(case, dict), "case is an object"
-        description = case.get("description")
-        assert description is None or isinstance(description, str)
+        jschema = case["schema"]
+        assert isinstance(jschema, (bool, dict)), "boolean or object schema"
         tests = case["tests"]
         assert isinstance(tests, list), "tests is a list of instances"
+        description = case.get("description")
+        assert description is None or isinstance(description, str)
 
-        files: list[str] = []
+        CACHE.mkdir(exist_ok=True)
         results: JsonArray = []
 
         try:
@@ -112,14 +115,12 @@ class Runner:
                     for url, schema in reg.items():
                         # use truncated hashed url as filename
                         uh = hashlib.sha3_256(url.encode()).hexdigest()[:16]
-                        fn = f"{CACHE}/{uh}.json"
-                        files.append(fn)
-                        with Path.open(fn, "w") as fp:
+                        with Path.open(CACHE / f"{uh}.json", "w") as fp:
                             json.dump(schema, fp)
 
             # compile schema to python
             checker = json_schema_to_python_checker(
-                case["schema"],
+                jschema,
                 description,
                 cache=CACHE,
                 version=self.version,
@@ -131,17 +132,15 @@ class Runner:
         except Exception:  # an internal error occurred
             return {
                 "errored": True,
-                "seq": req.get("seq"),
+                "seq": req["seq"],
                 "context": {"traceback": traceback.format_exc()},
             }
 
-        finally:
-            # remove registered files
-            for fn in files:
-                Path(fn).unlink()
+        finally:  # wipe out cache to avoid state leaks
+            shutil.rmtree(CACHE)
 
         return {
-            "seq": req.get("seq"),
+            "seq": req["seq"],
             "results": results,
         }
 
@@ -152,7 +151,7 @@ class Runner:
     def process(self, req: JsonObject) -> JsonObject:
         """Process one request."""
 
-        cmd = req.get("cmd", "run")  # default is to run
+        cmd = req["cmd"]
         match cmd:
             case "start":
                 return self.cmd_start(req)
