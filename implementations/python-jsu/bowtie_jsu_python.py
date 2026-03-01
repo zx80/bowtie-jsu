@@ -83,9 +83,11 @@ class Runner:
     def cmd_dialect(self, req: JsonObject) -> JsonObject:
         """Set current JSON Schema dialect, needed for schema semantics."""
 
+        assert "dialect" in req, "dialect command expects a dialect"
+
         try:
             self.version = VERSIONS[req["dialect"]]
-        except Exception:  # unknown version
+        except KeyError:  # unknown version
             self.version = 0
 
         return {"ok": True}
