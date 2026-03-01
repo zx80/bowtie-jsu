@@ -124,9 +124,7 @@ class Runner:
             )
 
             # apply to test vector
-            results = [
-                {"valid": checker(test["instance"])} for test in tests
-            ]
+            results = [{"valid": checker(test["instance"])} for test in tests]
 
         except Exception:  # an internal error occurred
             return {
