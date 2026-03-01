@@ -14,15 +14,17 @@ import platform
 import sys
 import traceback
 
-from jsonschema_specifications import REGISTRY
+from jsonschema_specifications import REGISTRY, Schema
 from jsutils import json_schema_to_python_checker
 
-type Jsonable = (
-    None | bool | int | float | str | list[Jsonable] | dict[str, Jsonable]
-)
+type JsonObject = dict[str, Json]
+type JsonArray = list[Json]
+type Json = None | bool | int | float | str | JsonArray | JsonObject
 
 # available JSON Schema specifications
-SPECS: dict[str, Jsonable] = {url: REGISTRY.contents(url) for url in REGISTRY}
+SPECS: dict[str, Schema] = {
+    url: REGISTRY.contents(url) for url in REGISTRY
+}
 
 # JSON Schema version URL to internal version
 VERSIONS: dict[str, int] = {
@@ -50,13 +52,13 @@ class RunnerError(Exception):
 
 @dataclass
 class Runner:
-    # current dialect, but for older dialects only
+    # current dialect
     version: int | None = None
 
     # count input lines for some error messages
     line: int = 0
 
-    def cmd_start(self, req: Jsonable) -> Jsonable:
+    def cmd_start(self, req: JsonObject) -> JsonObject:
         """Respond to start with various meta data about the implementation."""
 
         assert req.get("version") == 1, "expecting protocol version 1"
@@ -78,7 +80,7 @@ class Runner:
             },
         }
 
-    def cmd_dialect(self, req: Jsonable) -> Jsonable:
+    def cmd_dialect(self, req: JsonObject) -> JsonObject:
         """Set current JSON Schema dialect, needed for schema semantics."""
 
         try:
@@ -88,14 +90,18 @@ class Runner:
 
         return {"ok": True}
 
-    def cmd_run(self, req: Jsonable) -> Jsonable:
+    def cmd_run(self, req: JsonObject) -> JsonObject:
         """Run one case and its tests."""
 
         case = req["case"]
-        assert isinstance(case, dict)
+        assert isinstance(case, dict), "case is an object"
         description = case.get("description")
+        assert description is None or isinstance(description, str)
+        tests = case["tests"]
+        assert isinstance(tests, list), "tests is a list of instances"
 
-        files, results = [], []
+        files: list[str] = []
+        results: JsonArray = []
 
         try:
             # put registries in cache
@@ -119,7 +125,7 @@ class Runner:
 
             # apply to test vector
             results = [
-                {"valid": checker(test["instance"])} for test in case["tests"]
+                {"valid": checker(test["instance"])} for test in tests
             ]
 
         except Exception:  # an internal error occurred
@@ -130,7 +136,7 @@ class Runner:
             }
 
         finally:
-            # remove registered files from cache
+            # remove registered files
             for fn in files:
                 Path(fn).unlink()
 
@@ -139,11 +145,11 @@ class Runner:
             "results": results,
         }
 
-    def cmd_stop(self, req: Jsonable) -> Jsonable:
+    def cmd_stop(self, req: JsonObject) -> JsonObject:
         """Stop all processing."""
         sys.exit(0)
 
-    def process(self, req: Jsonable) -> Jsonable:
+    def process(self, req: JsonObject) -> JsonObject:
         """Process one request."""
 
         cmd = req.get("cmd", "run")  # default is to run
